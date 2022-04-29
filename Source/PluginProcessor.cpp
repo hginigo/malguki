@@ -95,6 +95,7 @@ void MalgukiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+    auxBuffer.setSize(1, samplesPerBlock * 2);
 }
 
 void MalgukiAudioProcessor::releaseResources()
@@ -132,7 +133,6 @@ bool MalgukiAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) 
 void MalgukiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     midiMessages.clear();
-    // juce::AudioBuffer<float> processedAudio;
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
@@ -153,15 +153,14 @@ void MalgukiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    {
+    for (int channel = 0; channel < totalNumInputChannels; ++channel) {
+        // ..do something to the data...
         auto* inBuffer = buffer.getReadPointer(channel);
         auto* outBuffer = buffer.getWritePointer(channel);
         
         for (auto sample = 0; sample < buffer.getNumSamples(); ++sample) {
             outBuffer[sample] = inBuffer[sample] * volume;
         }
-        // ..do something to the data...
 
     }
 }

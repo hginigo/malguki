@@ -10,6 +10,7 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
+#include "Reverb.h"
 
 //==============================================================================
 /**
@@ -32,6 +33,7 @@ private:
     MalgukiAudioProcessor& audioProcessor;
 
     juce::Slider audioVolume;
+    // juce::LookAndFeel_V4 lookAndFeel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MalgukiAudioProcessorEditor)
 };

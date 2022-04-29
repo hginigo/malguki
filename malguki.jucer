@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="se9qY4" name="malguki" projectType="audioplug" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1">
+              addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1"
+              cppLanguageStandard="17">
   <MAINGROUP id="SfRTAw" name="malguki">
     <GROUP id="{4B9A6DBA-B5B7-3748-A316-C56002F376AF}" name="Source">
+      <FILE id="qgUpZS" name="Reverb.cpp" compile="1" resource="0" file="Source/Reverb.cpp"/>
+      <FILE id="lYPDLV" name="Reverb.h" compile="0" resource="0" file="Source/Reverb.h"/>
       <FILE id="qi8G6M" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="zqyUze" name="PluginProcessor.h" compile="0" resource="0"

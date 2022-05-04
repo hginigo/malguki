@@ -8,19 +8,22 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <stdio.h>
 
 //==============================================================================
 MalgukiAudioProcessor::MalgukiAudioProcessor()
+    :
 #ifndef JucePlugin_PreferredChannelConfigurations
-     : AudioProcessor (BusesProperties()
+     AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                     ),
 #endif
+     reverb(48, 50, 0.1, 400)
 {
 }
 
@@ -153,13 +156,24 @@ void MalgukiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
+    float result, sample;
     for (int channel = 0; channel < totalNumInputChannels; ++channel) {
         // ..do something to the data...
         auto* inBuffer = buffer.getReadPointer(channel);
         auto* outBuffer = buffer.getWritePointer(channel);
         
-        for (auto sample = 0; sample < buffer.getNumSamples(); ++sample) {
-            outBuffer[sample] = inBuffer[sample] * volume;
+        for (auto i = 0; i < buffer.getNumSamples(); ++i) {
+            if (channel == 0) {
+                sample = inBuffer[i];
+                reverb.applySample(sample);
+                reverb.update();
+                result = reverb.getSample();
+            } else {
+                result = inBuffer[i];
+            }
+            // if (sample != 0.f)
+            //     printf("channel %d: %f\n", channel, result);
+            outBuffer[i] = result * volume;
         }
 
     }

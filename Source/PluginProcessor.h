@@ -9,6 +9,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "Reverb.h"
 
 //==============================================================================
 /**
@@ -17,6 +18,7 @@ class MalgukiAudioProcessor  : public juce::AudioProcessor
 {
 public:
     float noteOnVel;
+    SpringArray reverb;
     //==============================================================================
     MalgukiAudioProcessor();
     ~MalgukiAudioProcessor() override;

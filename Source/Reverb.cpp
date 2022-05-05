@@ -4,10 +4,10 @@
 #include <cstdio>
 #include <algorithm>
 
-Vector::Vector(float x, float y)
+Vector::Vector(double x, double y)
     : x(x), y(y) {}
 
-float Vector::magnitude() const
+double Vector::magnitude() const
 {
     return sqrt(x*x + y*y);
 }
@@ -39,29 +39,29 @@ void Vector::operator-=(const Vector& other)
     y -= other.y;
 }
 
-Vector Vector::operator*(const float other) const
+Vector Vector::operator*(const double other) const
 {
     return Vector(x * other, y * other);
 }
 
-void Vector::operator*=(const float other)
+void Vector::operator*=(const double other)
 {
     x *= other;
     y *= other;
 }
 
-Vector Vector::operator/(const float other) const
+Vector Vector::operator/(const double other) const
 {
     return Vector(x / other, y / other);
 }
 
-void Vector::operator/=(const float other)
+void Vector::operator/=(const double other)
 {
     x /= other;
     y /= other;
 }
 
-Particle::Particle(float x, float y, float mass=1.f, bool locked=false)
+Particle::Particle(double x, double y, double mass=1.f, bool locked=false)
     : position {x, y},
       velocity {0.f, 0.f},
       acceleration {0.f, 0.f},
@@ -97,7 +97,7 @@ const Vector& Particle::accel() const
     return acceleration;
 }
 
-Spring::Spring(Particle& a, Particle& b, const float k, const float restLength)
+Spring::Spring(Particle& a, Particle& b, const double k, const double restLength)
     : a(a),
       b(b),
       k(k),
@@ -108,7 +108,7 @@ Spring::Spring(Particle& a, Particle& b, const float k, const float restLength)
 void Spring::update()
 {
     Vector dist = b.pos() - a.pos();
-    float x = dist.magnitude() - restLength;
+    double x = dist.magnitude() - restLength;
     Vector f = dist.normalize() * x * k;
     //printf("dist (%f %f), x %f, f (%f %f)\n", dist.x, dist.y, x, f.x, f.y);
 
@@ -116,7 +116,7 @@ void Spring::update()
     b.applyForce(f * -1.f);
 }
 
-SpringArray::SpringArray(const size_t nodes, const float mass, const float k, const float length)
+SpringArray::SpringArray(const size_t nodes, const double mass, const double k, const double length)
     : particles(),
       springs(),
       start(NULL),
@@ -124,8 +124,8 @@ SpringArray::SpringArray(const size_t nodes, const float mass, const float k, co
 {
     // temporary
     assert(nodes >= 2);
-    const float node_mass = mass / (nodes + 2);
-    const float restLength = length / (nodes + 1);
+    const double node_mass = mass / (nodes + 2);
+    const double restLength = length / (nodes + 1);
 
     particles.reserve(nodes + 2);
     springs.reserve(nodes + 1);
@@ -149,7 +149,7 @@ SpringArray::SpringArray(const size_t nodes, const float mass, const float k, co
     assert(springs.size() == nodes + 1);
 }
 
-void SpringArray::applySample(const float force)
+void SpringArray::applySample(const double force)
 {
     Vector forceVec = Vector(0.f, force);
     start->applyForce(forceVec);
@@ -164,9 +164,9 @@ void SpringArray::update()
         particle.update();
 }
 
-float SpringArray::getSample()
+double SpringArray::getSample()
 {
-    float sample = end->pos().y * 100;
-    // printf("start (%s) x: %f, y: %f\n", end->locked ? "locked":"not locked", end->pos().x, end->pos().y);
-    return std::clamp(sample, -1.f, 1.f);
+    double sample = end->pos().y * 100.f; 
+    printf("start x: %f, y: %f\n", end->pos().x, end->pos().y);
+    return std::clamp(sample, -1., 1.);
 }

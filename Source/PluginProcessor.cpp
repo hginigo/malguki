@@ -23,7 +23,10 @@ MalgukiAudioProcessor::MalgukiAudioProcessor()
                      #endif
                      ),
 #endif
-     reverb(48, 50, 0.1, 400)
+     // nodes, mass, k, length
+     r1(18, 20, 0.1, 20),
+     r2(18, 20, 0.1, 20)
+     // reverb(48, 50, 0.1, 400)
 {
 }
 
@@ -165,9 +168,14 @@ void MalgukiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
         for (auto i = 0; i < buffer.getNumSamples(); ++i) {
             if (channel == 0) {
                 sample = inBuffer[i];
-                reverb.applySample(sample);
-                reverb.update();
-                result = reverb.getSample();
+                r1.applySample(sample);
+                r1.update();
+                result = r1.getSample();
+            } else if (channel == 1) {
+                sample = inBuffer[i];
+                r2.applySample(sample);
+                r2.update();
+                result = r2.getSample();
             } else {
                 result = inBuffer[i];
             }

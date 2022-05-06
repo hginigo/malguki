@@ -60,6 +60,9 @@ public:
     void update();
     
     double getSample();
+
+    const std::vector<Particle>& getParticles() const;
+    const std::vector<Spring>& getSprings() const;
 private:
     std::vector<Particle> particles;
     std::vector<Spring> springs;

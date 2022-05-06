@@ -16,7 +16,8 @@
 /**
 */
 class MalgukiAudioProcessorEditor  : public juce::AudioProcessorEditor,
-                                     private juce::Slider::Listener
+                                     private juce::Slider::Listener,
+                                     private juce::Timer
 {
 public:
     MalgukiAudioProcessorEditor (MalgukiAudioProcessor&);
@@ -27,6 +28,8 @@ public:
     void resized() override;
 
 private:
+    int frameCounter;
+    void timerCallback() final;
     void sliderValueChanged (juce::Slider* slider) override;
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.

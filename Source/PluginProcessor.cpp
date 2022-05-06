@@ -24,8 +24,8 @@ MalgukiAudioProcessor::MalgukiAudioProcessor()
                      ),
 #endif
      // nodes, mass, k, length
-     r1(18, 20, 0.1, 20),
-     r2(18, 20, 0.1, 20)
+     r1(32, 100, 1.0, 20),
+     r2(32, 100, 1.0, 20)
      // reverb(48, 50, 0.1, 400)
 {
 }
@@ -101,7 +101,7 @@ void MalgukiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    auxBuffer.setSize(1, samplesPerBlock * 2);
+    // auxBuffer.setSize(1, samplesPerBlock * 2);
 }
 
 void MalgukiAudioProcessor::releaseResources()
@@ -166,21 +166,25 @@ void MalgukiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
         auto* outBuffer = buffer.getWritePointer(channel);
         
         for (auto i = 0; i < buffer.getNumSamples(); ++i) {
+            sample = inBuffer[i];
+            printf("%f\n", sample);
             if (channel == 0) {
-                sample = inBuffer[i];
-                r1.applySample(sample);
+                if (sample != 0.0)
+                    r1.applySample(sample);
                 r1.update();
                 result = r1.getSample();
+                // result = (2.f/juce::float_Pi) * atan(result);
             } else if (channel == 1) {
-                sample = inBuffer[i];
-                r2.applySample(sample);
+                if (sample != 0.0)
+                    r2.applySample(sample);
                 r2.update();
                 result = r2.getSample();
+                // result = (2.f/juce::float_Pi) * atan(result);
             } else {
                 result = inBuffer[i];
             }
             // if (sample != 0.f)
-            //     printf("channel %d: %f\n", channel, result);
+            printf("channel %d: %f\n", channel, result);
             outBuffer[i] = result * volume;
         }
 

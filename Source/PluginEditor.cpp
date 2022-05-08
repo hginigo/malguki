@@ -8,6 +8,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <cassert>
 
 //==============================================================================
 MalgukiAudioProcessorEditor::MalgukiAudioProcessorEditor (MalgukiAudioProcessor& p)
@@ -48,7 +49,8 @@ void MalgukiAudioProcessorEditor::paint (juce::Graphics& g)
     juce::Point<float> p ((float) getWidth()  / 2.0f + 1.0f * (float) radius * std::sin ((float) frameCounter * 0.04f),
                           (float) getHeight() / 2.0f + 1.0f * (float) radius * std::cos ((float) frameCounter * 0.04f));
 
-    auto particles = audioProcessor.r1.getParticles();
+    assert(audioProcessor.springArrays.size() > 0);
+    auto& particles = audioProcessor.springArrays[0].getParticles();
 
     for (const Particle& particle : particles) {
         Vector pos = particle.pos();

@@ -18,7 +18,7 @@ class MalgukiAudioProcessor  : public juce::AudioProcessor
 {
 public:
     float noteOnVel;
-    SpringArray r1, r2;
+    std::vector<SpringArray> springArrays;
     //==============================================================================
     MalgukiAudioProcessor();
     ~MalgukiAudioProcessor() override;

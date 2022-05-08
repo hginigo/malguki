@@ -14,19 +14,16 @@
 MalgukiAudioProcessor::MalgukiAudioProcessor()
     :
 #ifndef JucePlugin_PreferredChannelConfigurations
-     AudioProcessor (BusesProperties()
-                     #if ! JucePlugin_IsMidiEffect
-                      #if ! JucePlugin_IsSynth
-                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                      #endif
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-                     #endif
-                     ),
+    AudioProcessor (BusesProperties()
+#if ! JucePlugin_IsMidiEffect
+#if ! JucePlugin_IsSynth
+                    .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
 #endif
-     // nodes, mass, k, length
-     r1(32, 100, 1.0, 20),
-     r2(32, 100, 1.0, 20)
-     // reverb(48, 50, 0.1, 400)
+                    .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+#endif
+                    ),
+#endif
+    springArrays{}
 {
 }
 
@@ -42,29 +39,29 @@ const juce::String MalgukiAudioProcessor::getName() const
 
 bool MalgukiAudioProcessor::acceptsMidi() const
 {
-   #if JucePlugin_WantsMidiInput
+#if JucePlugin_WantsMidiInput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool MalgukiAudioProcessor::producesMidi() const
 {
-   #if JucePlugin_ProducesMidiOutput
+#if JucePlugin_ProducesMidiOutput
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 bool MalgukiAudioProcessor::isMidiEffect() const
 {
-   #if JucePlugin_IsMidiEffect
+#if JucePlugin_IsMidiEffect
     return true;
-   #else
+#else
     return false;
-   #endif
+#endif
 }
 
 double MalgukiAudioProcessor::getTailLengthSeconds() const
@@ -102,6 +99,17 @@ void MalgukiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     // auxBuffer.setSize(1, samplesPerBlock * 2);
+    springArrays.clear();
+    springArrays.reserve(getTotalNumInputChannels());
+    for (int i = 0; i < getTotalNumInputChannels(); ++i) {
+        // nodes, mass, k, length
+        springArrays.emplace_back(18, 100, 1.0, 20);
+    }
+
+    // nodes, mass, k, length
+    // r1(32, 100, 1.0, 20),
+    // r2(32, 100, 1.0, 20)
+    // reverb(48, 50, 0.1, 400)
 }
 
 void MalgukiAudioProcessor::releaseResources()
@@ -165,26 +173,14 @@ void MalgukiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
         auto* inBuffer = buffer.getReadPointer(channel);
         auto* outBuffer = buffer.getWritePointer(channel);
         
+        auto& sa = springArrays[channel];
         for (auto i = 0; i < buffer.getNumSamples(); ++i) {
             sample = inBuffer[i];
-            printf("%f\n", sample);
-            if (channel == 0) {
-                if (sample != 0.0)
-                    r1.applySample(sample);
-                r1.update();
-                result = r1.getSample();
-                // result = (2.f/juce::float_Pi) * atan(result);
-            } else if (channel == 1) {
-                if (sample != 0.0)
-                    r2.applySample(sample);
-                r2.update();
-                result = r2.getSample();
-                // result = (2.f/juce::float_Pi) * atan(result);
-            } else {
-                result = inBuffer[i];
-            }
-            // if (sample != 0.f)
-            printf("channel %d: %f\n", channel, result);
+            if (sample != 0.0)
+                sa.applySample(sample);
+            
+            sa.update();
+            result = sa.getSample();
             outBuffer[i] = result * volume;
         }
 

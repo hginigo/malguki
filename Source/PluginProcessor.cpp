@@ -98,7 +98,13 @@ void MalgukiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    // auxBuffer.setSize(1, samplesPerBlock * 2);
+    // buffer de 2 segundos
+    auto delayBufferSize = sampleRate * 2.0;
+    delayBuffer.setSize(getTotalNumInputChannels(), (int) delayBufferSize);
+
+    for (auto i = 0; i < getTotalNumInputChannels(); ++i)
+        delayBuffer.clear(i, 0, delayBuffer.getNumSamples());
+
     springArrays.clear();
     springArrays.reserve(getTotalNumInputChannels());
     for (int i = 0; i < getTotalNumInputChannels(); ++i) {
@@ -157,7 +163,7 @@ void MalgukiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     // This is here to avoid people getting screaming feedback
     // when they first compile a plugin, but obviously you don't need to keep
     // this code if your algorithm always overwrites all the output channels.
-    auto volume = noteOnVel;
+    auto volume = mix;
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
@@ -168,23 +174,29 @@ void MalgukiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
     float result, sample;
+    auto bufferSize = buffer.getNumSamples();
+    auto delayBufferSize = delayBuffer.getNumSamples();
     for (int channel = 0; channel < totalNumInputChannels; ++channel) {
         // ..do something to the data...
         auto* inBuffer = buffer.getReadPointer(channel);
         auto* outBuffer = buffer.getWritePointer(channel);
         
+        readFromBuffer(channel, delayBufferSize, buffer, bufferSize, delayTime, feedback);
         auto& sa = springArrays[channel];
-        for (auto i = 0; i < buffer.getNumSamples(); ++i) {
+        for (auto i = 0; i < bufferSize; ++i) {
             sample = inBuffer[i];
             if (sample != 0.0)
                 sa.applySample(sample);
             
             sa.update();
             result = sa.getSample();
-            outBuffer[i] = result * volume;
+            outBuffer[i] = sample * volume;
         }
-
+        // fillBuffer(channel, delayBufferSize, inBuffer, bufferSize);
+        fillBuffer(channel, delayBufferSize, outBuffer, bufferSize);
     }
+    writePosition += bufferSize;
+    writePosition %= delayBufferSize;
 }
 
 //==============================================================================
@@ -210,6 +222,37 @@ void MalgukiAudioProcessor::setStateInformation (const void* data, int sizeInByt
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+}
+
+void MalgukiAudioProcessor::fillBuffer(int channel, int delayBufferSize, const float* channelData, int bufferSize)
+{
+    if (delayBufferSize > bufferSize + writePosition) {
+        delayBuffer.copyFrom(channel, writePosition, channelData, bufferSize);
+    } else {
+        auto numSamplesToEnd = delayBufferSize - writePosition;
+        delayBuffer.copyFrom(channel, writePosition, channelData, numSamplesToEnd);
+
+        auto numSamplesAtStart = bufferSize - numSamplesToEnd;
+        delayBuffer.copyFrom(channel, 0, channelData + numSamplesToEnd, numSamplesAtStart);
+    }
+}
+
+void MalgukiAudioProcessor::readFromBuffer(int channel, int delayBufferSize, juce::AudioBuffer<float>& buffer, int bufferSize, float delayTime, float feedback)
+{
+    auto readPosition = writePosition - getSampleRate() * delayTime;
+
+    if (readPosition < 0)
+        readPosition += delayBufferSize;
+
+    if (readPosition + bufferSize < delayBufferSize) {
+        buffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), bufferSize, feedback, feedback);
+    } else {
+        auto numSamplesToEnd = delayBufferSize - readPosition;
+        buffer.addFromWithRamp(channel, 0, delayBuffer.getReadPointer(channel, readPosition), numSamplesToEnd, feedback, feedback);
+
+        auto numSamplesAtStart = bufferSize - numSamplesToEnd;
+        buffer.addFromWithRamp(channel, numSamplesToEnd, delayBuffer.getReadPointer(channel, 0), numSamplesAtStart, feedback, feedback);
+    }
 }
 
 //==============================================================================

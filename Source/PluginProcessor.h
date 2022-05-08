@@ -17,7 +17,11 @@
 class MalgukiAudioProcessor  : public juce::AudioProcessor
 {
 public:
-    float noteOnVel;
+    float mix;
+    float preGain;
+    float postGain;
+    float delayTime;
+    float feedback;
     std::vector<SpringArray> springArrays;
     //==============================================================================
     MalgukiAudioProcessor();
@@ -58,6 +62,9 @@ public:
 
 private:
     //==============================================================================
-    // juce::AudioBuffer<float> auxBuffer;
+    juce::AudioBuffer<float> delayBuffer;
+    void fillBuffer(int channel, int delayBufferSize, const float* channelData, int bufferSize);
+    void readFromBuffer(int channel, int delayBufferSize, juce::AudioBuffer<float>& buffer, int bufferSize, float delayTime, float feedback);
+    int writePosition {0};
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MalgukiAudioProcessor)
 };

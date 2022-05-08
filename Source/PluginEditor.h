@@ -35,7 +35,11 @@ private:
     // access the processor object that created it.
     MalgukiAudioProcessor& audioProcessor;
 
-    juce::Slider audioVolume;
+    juce::Slider mix;
+    juce::Slider preGain;
+    juce::Slider postGain;
+    juce::Slider delayTime;
+    juce::Slider feedback;
     // juce::LookAndFeel_V4 lookAndFeel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MalgukiAudioProcessorEditor)

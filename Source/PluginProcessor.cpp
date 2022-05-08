@@ -99,15 +99,20 @@ void MalgukiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     // buffer de 2 segundos
+    auto totalNumInputChannels = getTotalNumInputChannels();
     auto delayBufferSize = sampleRate * 2.0;
-    delayBuffer.setSize(getTotalNumInputChannels(), (int) delayBufferSize);
 
-    for (auto i = 0; i < getTotalNumInputChannels(); ++i)
+    delayBuffer.setSize(totalNumInputChannels, (int) delayBufferSize);
+    auxBuffer.setSize(totalNumInputChannels, samplesPerBlock);
+
+    for (auto i = 0; i < totalNumInputChannels; ++i) {
         delayBuffer.clear(i, 0, delayBuffer.getNumSamples());
+        auxBuffer.clear(i, 0, auxBuffer.getNumSamples());
+    }
 
     springArrays.clear();
-    springArrays.reserve(getTotalNumInputChannels());
-    for (int i = 0; i < getTotalNumInputChannels(); ++i) {
+    springArrays.reserve(totalNumInputChannels);
+    for (int i = 0; i < totalNumInputChannels; ++i) {
         // nodes, mass, k, length
         springArrays.emplace_back(18, 100, 1.0, 20);
     }
@@ -176,24 +181,40 @@ void MalgukiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     float result, sample;
     auto bufferSize = buffer.getNumSamples();
     auto delayBufferSize = delayBuffer.getNumSamples();
+
     for (int channel = 0; channel < totalNumInputChannels; ++channel) {
-        // ..do something to the data...
+        auxBuffer.copyFrom(channel, 0, buffer, channel, 0, bufferSize);
+
+        // 1. aplicamos ganancia de entrada
+        auxBuffer.applyGain(preGain);
+
+        auto* inAuxBuffer = auxBuffer.getReadPointer(channel);
+        auto* outAuxBuffer = auxBuffer.getWritePointer(channel);
+
         auto* inBuffer = buffer.getReadPointer(channel);
         auto* outBuffer = buffer.getWritePointer(channel);
         
-        readFromBuffer(channel, delayBufferSize, buffer, bufferSize, delayTime, feedback);
         auto& sa = springArrays[channel];
+
+        // 2. pasamos por el difusor
         for (auto i = 0; i < bufferSize; ++i) {
-            sample = inBuffer[i];
+            sample = inAuxBuffer[i];
             if (sample != 0.0)
                 sa.applySample(sample);
             
             sa.update();
             result = sa.getSample();
-            outBuffer[i] = sample * volume;
+
+            // 3. aplicamos ganancia de salida
+            outAuxBuffer[i] = result * postGain;
         }
+
+        readFromBuffer(channel, delayBufferSize, auxBuffer, bufferSize, delayTime, feedback);
         // fillBuffer(channel, delayBufferSize, inBuffer, bufferSize);
-        fillBuffer(channel, delayBufferSize, outBuffer, bufferSize);
+        fillBuffer(channel, delayBufferSize, outAuxBuffer, bufferSize);
+        for (auto i = 0; i < bufferSize; ++i) {
+            outBuffer[i] = outAuxBuffer[i] * mix + inBuffer[i] * (1.f - mix);
+        }
     }
     writePosition += bufferSize;
     writePosition %= delayBufferSize;

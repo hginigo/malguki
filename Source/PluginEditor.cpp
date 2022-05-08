@@ -24,7 +24,7 @@ MalgukiAudioProcessorEditor::MalgukiAudioProcessorEditor (MalgukiAudioProcessor&
     mix.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 90, 15);
     mix.setTextValueSuffix(" Mix");
     mix.setMouseDragSensitivity(50);
-    mix.setValue(0.75);
+    mix.setValue(0.5);
     mix.addListener(this);
 
     preGain.setSliderStyle(juce::Slider::RotaryVerticalDrag);

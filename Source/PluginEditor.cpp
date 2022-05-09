@@ -11,8 +11,8 @@
 #include <cassert>
 
 //==============================================================================
-MalgukiAudioProcessorEditor::MalgukiAudioProcessorEditor (MalgukiAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p), frameCounter(0)
+MalgukiAudioProcessorEditor::MalgukiAudioProcessorEditor (MalgukiAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
+    : AudioProcessorEditor (&p), audioProcessor (p), frameCounter(0), valueTreeState(vts)
 {
     startTimerHz(60);
     // Make sure that before the constructor has finished, you've set the
@@ -20,50 +20,41 @@ MalgukiAudioProcessorEditor::MalgukiAudioProcessorEditor (MalgukiAudioProcessor&
     setSize(800, 400);
 
     mix.setSliderStyle(juce::Slider::RotaryVerticalDrag);
-    mix.setRange(0.0, 1.0, 0.01);
     mix.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 90, 15);
     mix.setTextValueSuffix(" Mix");
     mix.setMouseDragSensitivity(50);
-    mix.setValue(0.5);
-    mix.addListener(this);
 
     preGain.setSliderStyle(juce::Slider::RotaryVerticalDrag);
-    preGain.setRange(0.0, 4.0, 0.01);
     preGain.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 15);
     preGain.setTextValueSuffix(" Pre Gain");
     preGain.setMouseDragSensitivity(50);
-    preGain.setValue(1.0);
-    preGain.addListener(this);
 
     postGain.setSliderStyle(juce::Slider::RotaryVerticalDrag);
-    postGain.setRange(0.0, 4.0, 0.01);
     postGain.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 15);
     postGain.setTextValueSuffix(" Post Gain");
     postGain.setMouseDragSensitivity(50);
-    postGain.setValue(1.0);
-    postGain.addListener(this);
 
     delayTime.setSliderStyle(juce::Slider::RotaryVerticalDrag);
-    delayTime.setRange(0.02, 0.08, 0.001);
     delayTime.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 130, 15);
     delayTime.setTextValueSuffix(" Delay Time");
     delayTime.setMouseDragSensitivity(50);
-    delayTime.setValue(0.03);
-    delayTime.addListener(this);
 
     feedback.setSliderStyle(juce::Slider::RotaryVerticalDrag);
-    feedback.setRange(0.0, 1.0, 0.01);
     feedback.setTextBoxStyle(juce::Slider::TextBoxBelow, true, 100, 15);
     feedback.setTextValueSuffix(" Feedback");
     feedback.setMouseDragSensitivity(50);
-    feedback.setValue(0.6);
-    feedback.addListener(this);
 
     addAndMakeVisible(&mix);
     addAndMakeVisible(&preGain);
     addAndMakeVisible(&postGain);
     addAndMakeVisible(&delayTime);
     addAndMakeVisible(&feedback);
+
+    feedbackAttachment.reset(new SliderAttachment(valueTreeState, "feedback", feedback));
+    mixAttachment.reset(new SliderAttachment(valueTreeState, "mix", mix));
+    preAttachment.reset(new SliderAttachment(valueTreeState, "preGain", preGain));
+    postAttachment.reset(new SliderAttachment(valueTreeState, "postGain", postGain));
+    delayAttachment.reset(new SliderAttachment(valueTreeState, "delayTime", delayTime));
 }
 
 MalgukiAudioProcessorEditor::~MalgukiAudioProcessorEditor()
@@ -137,15 +128,6 @@ void MalgukiAudioProcessorEditor::resized()
                       2 * smallSize,
                       2 * smallSize);
 
-}
-
-void MalgukiAudioProcessorEditor::sliderValueChanged(juce::Slider* slider)
-{
-    audioProcessor.mix = mix.getValue();
-    audioProcessor.preGain = preGain.getValue();
-    audioProcessor.postGain = postGain.getValue();
-    audioProcessor.delayTime = delayTime.getValue();
-    audioProcessor.feedback = feedback.getValue();
 }
 
 void MalgukiAudioProcessorEditor::timerCallback()

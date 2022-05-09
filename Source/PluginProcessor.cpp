@@ -23,8 +23,26 @@ MalgukiAudioProcessor::MalgukiAudioProcessor()
 #endif
                     ),
 #endif
-    springArrays{}
+    springArrays{},
+    parameters(*this, nullptr, juce::Identifier("malgukivst"),
+               {
+                   std::make_unique<juce::AudioParameterFloat> ("mix", "Mix",
+                                                                juce::NormalisableRange<float>(0.0, 1.0, 0.01), 0.5),
+                   std::make_unique<juce::AudioParameterFloat> ("preGain", "Pre Gain",
+                                                                juce::NormalisableRange<float>(0.0, 3.0, 0.01), 1.0),
+                   std::make_unique<juce::AudioParameterFloat> ("postGain", "Post Gain",
+                                                                juce::NormalisableRange<float>(0.0, 3.0, 0.01), 1.0),
+                   std::make_unique<juce::AudioParameterFloat> ("delayTime", "Delay Time",
+                                                                juce::NormalisableRange<float>(0.02, 0.08, 0.001), 0.03),
+                   std::make_unique<juce::AudioParameterFloat> ("feedback", "Feedback",
+                                                                juce::NormalisableRange<float>(0.0, 1.0, 0.01), 0.6),
+               })
 {
+    mix = parameters.getRawParameterValue("mix");
+    preGain = parameters.getRawParameterValue("preGain");
+    postGain = parameters.getRawParameterValue("postGain");
+    delayTime = parameters.getRawParameterValue("delayTime");
+    feedback = parameters.getRawParameterValue("feedback");
 }
 
 MalgukiAudioProcessor::~MalgukiAudioProcessor()
@@ -168,7 +186,6 @@ void MalgukiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     // This is here to avoid people getting screaming feedback
     // when they first compile a plugin, but obviously you don't need to keep
     // this code if your algorithm always overwrites all the output channels.
-    auto volume = mix;
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
@@ -186,7 +203,7 @@ void MalgukiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
         auxBuffer.copyFrom(channel, 0, buffer, channel, 0, bufferSize);
 
         // 1. aplicamos ganancia de entrada
-        auxBuffer.applyGain(preGain);
+        auxBuffer.applyGain(*preGain);
 
         auto* inAuxBuffer = auxBuffer.getReadPointer(channel);
         auto* outAuxBuffer = auxBuffer.getWritePointer(channel);
@@ -206,14 +223,14 @@ void MalgukiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
             result = sa.getSample();
 
             // 3. aplicamos ganancia de salida
-            outAuxBuffer[i] = result * postGain;
+            outAuxBuffer[i] = result * *postGain;
         }
 
-        readFromBuffer(channel, delayBufferSize, auxBuffer, bufferSize, delayTime, feedback);
+        readFromBuffer(channel, delayBufferSize, auxBuffer, bufferSize, *delayTime, *feedback);
         // fillBuffer(channel, delayBufferSize, inBuffer, bufferSize);
         fillBuffer(channel, delayBufferSize, outAuxBuffer, bufferSize);
         for (auto i = 0; i < bufferSize; ++i) {
-            outBuffer[i] = outAuxBuffer[i] * mix + inBuffer[i] * (1.f - mix);
+            outBuffer[i] = outAuxBuffer[i] * *mix + inBuffer[i] * (1.f - *mix);
         }
     }
     writePosition += bufferSize;
@@ -228,7 +245,7 @@ bool MalgukiAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* MalgukiAudioProcessor::createEditor()
 {
-    return new MalgukiAudioProcessorEditor (*this);
+    return new MalgukiAudioProcessorEditor (*this, parameters);
 }
 
 //==============================================================================
@@ -237,12 +254,19 @@ void MalgukiAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
+    auto state = parameters.copyState();
+    std::unique_ptr<juce::XmlElement> xml (state.createXml());
+    copyXmlToBinary(*xml, destData);
 }
 
 void MalgukiAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
+    std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
+    if (xmlState.get() != nullptr)
+        if (xmlState->hasTagName(parameters.state.getType()))
+            parameters.replaceState(juce::ValueTree::fromXml(*xmlState));
 }
 
 void MalgukiAudioProcessor::fillBuffer(int channel, int delayBufferSize, const float* channelData, int bufferSize)

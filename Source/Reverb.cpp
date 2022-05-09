@@ -157,7 +157,7 @@ SpringArray::SpringArray(const size_t nodes,
 void SpringArray::applySample(const double force)
 {
     double ratio = 0.7f;
-    Vector forceVec = Vector(0.0f, force * 0.1f);
+    Vector forceVec = Vector(0.0f, force * 0.05f);
     start->applyForce(forceVec);
 }
 

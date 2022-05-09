@@ -17,11 +17,6 @@
 class MalgukiAudioProcessor  : public juce::AudioProcessor
 {
 public:
-    float mix;
-    float preGain;
-    float postGain;
-    float delayTime;
-    float feedback;
     std::vector<SpringArray> springArrays;
     //==============================================================================
     MalgukiAudioProcessor();
@@ -62,6 +57,12 @@ public:
 
 private:
     //==============================================================================
+    std::atomic<float>* mix = nullptr;
+    std::atomic<float>* preGain = nullptr;
+    std::atomic<float>* postGain = nullptr;
+    std::atomic<float>* delayTime = nullptr;
+    std::atomic<float>* feedback = nullptr;
+    juce::AudioProcessorValueTreeState parameters;
     juce::AudioBuffer<float> delayBuffer;
     juce::AudioBuffer<float> auxBuffer;
     void fillBuffer(int channel, int delayBufferSize, const float* channelData, int bufferSize);
